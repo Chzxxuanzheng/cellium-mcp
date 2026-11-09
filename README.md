@@ -111,7 +111,7 @@ $EDITOR ~/.local/share/CelliumAgent/data/mcp/servers.json
 
 | 字段 | 适用 | 说明 |
 | --- | --- | --- |
-| `transport` | 全部 | `stdio`（默认）或 `http`；省略时按有无 `url` 自动推断 |
+| `transport` | 全部 | `stdio`（默认）或 `http`（别名 `remote` / `streamable_http`）；省略时按有无 `url` 自动推断 |
 | `command` | stdio | 可执行文件，如 `uvx`、`npx`、`python` |
 | `args` | stdio | 参数数组 |
 | `env` | stdio | 追加的环境变量对象 |

@@ -32,7 +32,7 @@ class McpClient:
                 cwd=spec.get("cwd") or None,
                 timeout=timeout,
             )
-        elif kind in ("http", "streamable_http", "streamable-http"):
+        elif kind in ("http", "remote", "streamable_http", "streamable-http"):
             url = spec.get("url")
             if not url:
                 raise McpError("服务器 %s 缺少 url 字段" % name)
