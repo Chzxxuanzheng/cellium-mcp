@@ -1,0 +1,35 @@
+[project]
+name = "cellium-mcp"
+version = "0.1.0"
+description = "Cellium 组件：把外部 MCP Server 的工具接入 Cellium（零第三方依赖）"
+readme = "README.md"
+authors = [
+    { name = "Mr.Lee", email = "chzxxuanzheng@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+# 组件运行时依赖由 Cellium 提供（app.core），因此项目本身不声明运行时依赖
+package = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "UP031"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
