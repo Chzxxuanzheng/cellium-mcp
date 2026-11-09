@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，如 0.1.1（workflow_dispatch 时必填）"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "::error::无法确定版本号"; exit 1
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::版本号必须形如 x.y.z，当前: $VERSION"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Sanity check
+        run: |
+          set -e
+          test -f src/cellium_mcp/__init__.py || { echo "::error::src/cellium_mcp/__init__.py 不存在"; exit 1; }
+          test -f meta.json || { echo "::error::meta.json 不存在"; exit 1; }
+          python - <<'PY'
+          import json
+          import pathlib
+          meta = json.loads(pathlib.Path("meta.json").read_text(encoding="utf-8"))
+          for key in ("slug", "name", "summary", "category", "versions"):
+              if not meta.get(key):
+                  raise SystemExit(f"meta.json 缺少字段: {key}")
+          print("meta.json OK:", meta["slug"], meta["versions"][0]["version"])
+          PY
+          python -m compileall -q src/cellium_mcp
+          grep -q "McpCell" src/cellium_mcp/__init__.py || { echo "::error::缺少 McpCell 导出"; exit 1; }
+          FILE_VER=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/cellium_mcp/__init__.py)
+          echo "源码版本: $FILE_VER / 发布版本: ${{ steps.ver.outputs.version }}"
+          if [ "$FILE_VER" != "${{ steps.ver.outputs.version }}" ]; then
+            echo "::warning::__init__.py 的 __version__ ($FILE_VER) 与 tag 不一致"
+          fi
+          META_VER=$(python -c "import json;print(json.load(open('meta.json'))['versions'][0]['version'])")
+          if [ "$META_VER" != "${{ steps.ver.outputs.version }}" ]; then
+            echo "::warning::meta.json 最新版本 ($META_VER) 与 tag 不一致"
+          fi
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          python - "${{ steps.ver.outputs.version }}" <<'PY'
+          import sys
+          import zipfile
+          from pathlib import Path
+
+          version = sys.argv[1]
+          src = Path("src") / "cellium_mcp"
+          target = Path("dist") / f"cellium-mcp-{version}.zip"
+          skip_dirs = {"__pycache__"}
+          skip_suffix = {".pyc", ".pyo"}
+
+          files = [
+              p for p in sorted(src.rglob("*"))
+              if p.is_file()
+              and not (set(p.parts) & skip_dirs)
+              and p.suffix not in skip_suffix
+          ]
+          if not files:
+              raise SystemExit("src/cellium_mcp 下没有可打包文件")
+
+          with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zf:
+              for p in files:
+                  zf.write(p, p.relative_to("src").as_posix())
+          print(f"打包完成: {target} ({len(files)} 个文件, 版本 {version})")
+          PY
+          cd dist && sha256sum ./*.zip > SHA256SUMS && cat SHA256SUMS
+          echo "---- 产物 ----"
+          ls -lh
+
+      - name: Verify zip layout
+        run: |
+          python - <<'PY'
+          import zipfile, glob
+          z = glob.glob("dist/cellium-mcp-*.zip")[0]
+          names = zipfile.ZipFile(z).namelist()
+          assert all(n.startswith("cellium_mcp/") for n in names), names
+          assert "cellium_mcp/__init__.py" in names, names
+          print("zip 布局 OK:", z, len(names), "个文件")
+          PY
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: v${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/cellium-mcp-${{ steps.ver.outputs.version }}.zip
+            dist/SHA256SUMS

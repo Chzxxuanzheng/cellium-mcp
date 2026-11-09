@@ -1,0 +1,26 @@
+{
+  "slug": "cellium-mcp",
+  "name": "MCP 工具接入",
+  "summary": "把外部 MCP Server 的工具全量注入成 Cellium 命令，支持 stdio 与 streamable HTTP，零第三方依赖。",
+  "category": "ai",
+  "tags": [
+    "mcp",
+    "工具接入",
+    "stdio",
+    "http",
+    "零依赖"
+  ],
+  "author": "Mr.Lee",
+  "repo": "https://github.com/Chzxxuanzheng/cellium-mcp",
+  "license": "MIT",
+  "cover": "",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "date": "2026-11-09",
+      "changelog": "首个版本：stdio 与 streamable HTTP 双传输；加载时把远端工具全量注入为组件命令，按 inputSchema 平铺参数；配置支持手写与 Claude Desktop 兼容格式；保留 call_tool 作为兜底入口。",
+      "download": "https://github.com/Chzxxuanzheng/cellium-mcp/releases/download/v0.1.0/cellium-mcp-0.1.0.zip",
+      "min_agent": "1.4.0"
+    }
+  ]
+}

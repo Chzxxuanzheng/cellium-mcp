@@ -45,6 +45,27 @@ ln -sfn "$PWD/src/cellium_mcp" ~/.local/share/CelliumAgent/components/cellium_mc
 
 装完在 Cellium 里执行 `component reload`（或重启）即可热加载。
 
+## 发布
+
+发版全走 CI，本地不打包、不传附件，只推 tag：
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0   # 触发构建与发布
+```
+
+`.github/workflows/release.yml` 会在 tag 推送时校验 `meta.json`、编译全部源码、
+打包成「顶层为 `cellium_mcp/`」的 zip、断言 zip 布局，再把
+`cellium-mcp-<version>.zip` 和 `SHA256SUMS` 挂到 Release。
+发 tag 前记得让这三处版本号一致：
+
+- `src/cellium_mcp/__init__.py` 的 `__version__`
+- `meta.json` 的 `versions[0].version`
+- git tag（`v` 前缀）
+
+`meta.json` 是组件市场的登记文件，`download` 直链指向本仓库 Release 附件，
+提交到 [xiaojinao/cellium-components](https://github.com/xiaojinao/cellium-components)
+的 `components/cellium-mcp/` 下即可上架。
+
 ## 使用
 
 **全注入模式**：组件加载（或热重载）时连接所有 MCP 服务器，把每个远端工具注入成一条
