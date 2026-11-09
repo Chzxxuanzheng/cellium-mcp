@@ -18,7 +18,7 @@ class McpClient:
     @classmethod
     def from_spec(cls, name: str, spec: dict[str, Any]) -> McpClient:
         timeout = float(spec.get("timeout") or 60)
-        kind = (spec.get("transport") or spec.get("type") or "").strip().lower()
+        kind = (spec.get("transport") or "").strip().lower()
         if not kind:
             kind = "http" if spec.get("url") else "stdio"
         if kind in ("stdio",):
@@ -32,7 +32,7 @@ class McpClient:
                 cwd=spec.get("cwd") or None,
                 timeout=timeout,
             )
-        elif kind in ("http", "remote", "streamable_http", "streamable-http"):
+        elif kind in ("http", "streamable_http", "streamable-http"):
             url = spec.get("url")
             if not url:
                 raise McpError("服务器 %s 缺少 url 字段" % name)
