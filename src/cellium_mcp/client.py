@@ -18,8 +18,10 @@ class McpClient:
     @classmethod
     def from_spec(cls, name: str, spec: dict[str, Any]) -> McpClient:
         timeout = float(spec.get("timeout") or 60)
-        kind = (spec.get("transport") or "stdio").lower()
-        if kind in ("stdio", ""):
+        kind = (spec.get("transport") or spec.get("type") or "").strip().lower()
+        if not kind:
+            kind = "http" if spec.get("url") else "stdio"
+        if kind in ("stdio",):
             command = spec.get("command")
             if not command:
                 raise McpError("服务器 %s 缺少 command 字段" % name)

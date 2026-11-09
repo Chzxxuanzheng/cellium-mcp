@@ -64,6 +64,33 @@ def main():
 
     cfg = Path(TMP) / "mcp" / "servers.json"
     print("\nconfig file:", cfg, "exists=", cfg.exists())
+
+    # 手写配置：mcpServers 格式（Claude Desktop / Cursor 风格）应能直接读取
+    from cellium_mcp import config as mcp_config
+
+    manual = {
+        "mcpServers": {
+            "manual": {
+                "command": sys.executable,
+                "args": [server_py],
+                "timeout": 20,
+            }
+        }
+    }
+    cfg.write_text(json.dumps(manual), encoding="utf-8")
+    loaded = mcp_config.list_servers()
+    assert "manual" in loaded, loaded
+    print("\nmanual mcpServers loaded:", list(loaded))
+
+    manual_tools = run(cell, "list_tools", server="manual")
+    show("list_tools from manual config", manual_tools)
+    assert manual_tools["success"], manual_tools
+
+    mcp_config.save(loaded)
+    saved = json.loads(cfg.read_text(encoding="utf-8"))
+    assert "mcpServers" not in saved and "manual" in saved["servers"], saved
+    print("normalized on save: servers =", list(saved["servers"]))
+
     print("\nALL CHECKS PASSED")
 
 

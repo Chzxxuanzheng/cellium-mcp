@@ -23,6 +23,26 @@ def _ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
+    """统一配置结构：兼容本组件的 servers 与 Claude Desktop / Cursor 的 mcpServers。"""
+    if not isinstance(raw, dict):
+        return {"servers": {}}
+    has_block = isinstance(raw.get("servers"), dict) or isinstance(raw.get("mcpServers"), dict)
+    if not has_block:
+        # 允许直接传入 {name: spec} 形式的服务器映射
+        if raw and all(isinstance(v, dict) for v in raw.values()):
+            return {"servers": dict(raw)}
+        return {"servers": {}}
+    merged: dict[str, Any] = {}
+    for key in ("mcpServers", "servers"):
+        block = raw.get(key)
+        if isinstance(block, dict):
+            merged.update(block)
+    rest = {k: v for k, v in raw.items() if k not in ("servers", "mcpServers")}
+    rest["servers"] = merged
+    return rest
+
+
 def load() -> dict[str, Any]:
     path = config_path()
     if not path.exists():
@@ -33,17 +53,15 @@ def load() -> dict[str, Any]:
         return {"servers": {}}
     if not isinstance(raw, dict):
         return {"servers": {}}
-    servers = raw.get("servers")
-    if not isinstance(servers, dict):
-        raw["servers"] = {}
-    return raw
+    return _normalize(raw)
 
 
 def save(data: dict[str, Any]) -> Path:
     path = config_path()
     _ensure_parent(path)
+    normalized = _normalize(data)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(normalized, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(path)
     return path
 

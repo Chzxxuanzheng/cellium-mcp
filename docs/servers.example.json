@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "filesystem": {
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-filesystem", "/home/lee/Documents"],
+      "env": {},
+      "timeout": 60
+    },
+    "remote-demo": {
+      "transport": "http",
+      "url": "http://127.0.0.1:8000/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      },
+      "timeout": 60
+    }
+  }
+}

@@ -71,8 +71,58 @@ call_tool server=fs tool=read_file arguments='{"path": "/tmp/a.txt"}'
 add_server name=remote transport=http url=http://127.0.0.1:8000/mcp headers='{"Authorization":"Bearer xxx"}'
 ```
 
-配置文件位置：`~/.local/share/CelliumAgent/data/mcp/servers.json`
-（可用环境变量 `CELLIUM_DATA_DIR` 覆盖）。
+配置文件位置：`~/.local/share/CelliumAgent/data/mcp/servers.json`（可用环境变量
+`CELLIUM_DATA_DIR` 覆盖）。**这个文件可以手写**，每次命令都会重新读取，改完立即生效，
+不需要重启 Cellium，也不是只能靠 AI 调 `add_server` 生成。
+
+## 手工编写配置
+
+首次使用时文件不存在，创建即可：
+
+```bash
+mkdir -p ~/.local/share/CelliumAgent/data/mcp
+cp docs/servers.example.json ~/.local/share/CelliumAgent/data/mcp/servers.json
+$EDITOR ~/.local/share/CelliumAgent/data/mcp/servers.json
+```
+
+格式（`docs/servers.example.json` 有完整示例）：
+
+```json
+{
+  "servers": {
+    "filesystem": {
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-filesystem", "/home/lee/Documents"],
+      "env": {},
+      "timeout": 60
+    },
+    "remote-demo": {
+      "transport": "http",
+      "url": "http://127.0.0.1:8000/mcp",
+      "headers": {"Authorization": "Bearer <your-token>"},
+      "timeout": 60
+    }
+  }
+}
+```
+
+字段说明：
+
+| 字段 | 适用 | 说明 |
+| --- | --- | --- |
+| `transport` | 全部 | `stdio`（默认）或 `http`；省略时按有无 `url` 自动推断 |
+| `command` | stdio | 可执行文件，如 `uvx`、`npx`、`python` |
+| `args` | stdio | 参数数组 |
+| `env` | stdio | 追加的环境变量对象 |
+| `cwd` | stdio | 子进程工作目录（可选） |
+| `url` | http | Streamable HTTP 端点 |
+| `headers` | http | 附加请求头 |
+| `timeout` | 全部 | 秒，默认 60 |
+
+兼容性：顶层键写 `servers` 或 `mcpServers` 都行，所以 Claude Desktop / Cursor 的
+`mcp.json` 内容可以直接粘过来（`type` 字段也认）；保存时会统一规范成 `servers`。
+
 
 ## 目录结构
 
