@@ -47,15 +47,31 @@ ln -sfn "$PWD/src/cellium_mcp" ~/.local/share/CelliumAgent/components/cellium_mc
 
 ## 使用
 
+**全注入模式**：组件加载（或热重载）时连接所有 MCP 服务器，把每个远端工具注入成一条
+`_cmd_` 命令。LLM 在工具定义里直接看到这些工具和参数，按工具名调用即可，不需要
+`list_tools` 预探测。
+
+```
+# 远端工具 Tavily__tavily-search 注入后，直接这样调：
+cellium_mcp(command="Tavily__tavily_search", query="...", max_results=5)
+# 而不是：command="call_tool", server="base-tool", tool="Tavily__tavily-search"
+```
+
+注入规则：工具名中非 `[A-Za-z0-9_]` 字符替换为 `_`（如 `Tavily__tavily-search` →
+`Tavily__tavily_search`），参数按 `inputSchema` 平铺成命令参数，必填/可选与类型都保留。
+
+代价是工具定义会变大（当前 8 个工具约 14 KB），这是全注入换来的可发现性。
+
 | 命令 | 说明 |
 | --- | --- |
 | `add_server` | 注册 MCP 服务器（stdio 用 `cmd`/`args`，http 用 `url`/`headers`） |
 | `remove_server` | 删除服务器配置 |
 | `list_servers` | 列出已注册服务器 |
-| `list_tools` | 列出工具（留空 `server` 则探测全部） |
-| `call_tool` | 调用工具，`arguments` 传 JSON 对象字符串 |
+| `refresh` | 重新拉取工具并重建注入（改配置后执行） |
+| `list_tools` | 实时查看远端工具（不吃注入快照） |
+| `call_tool` | 通用调用入口（工具未注入或临时调用） |
 | `ping` | 连通性检测（握手 + ping） |
-| `help` | 用法说明 |
+| `help` | 用法与已注入工具清单 |
 
 > 注意：`add_server` 的启动命令参数名是 **`cmd`**，因为 `command` 是 Cellium 框架的保留字
 > （`execute_with_context` 会把它当作命令名剔除）。
